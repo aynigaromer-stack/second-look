@@ -1,5 +1,10 @@
-import { Cloud, HardDrive, Upload } from 'lucide-react';
+'use client';
+
+import { useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Cloud, HardDrive, LoaderCircle, Mail, Upload } from 'lucide-react';
 import { sourceOptions } from '@/lib/data';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
 
 const iconMap = {
   nas: HardDrive,
@@ -8,6 +13,67 @@ const iconMap = {
 };
 
 export default function JoinPage() {
+  const searchParams = useSearchParams();
+  const initialMessage = useMemo(() => {
+    if (searchParams.get('sent') === '1') {
+      return 'Magic link 已发送到你的邮箱。请打开邮件继续登录。';
+    }
+    return '';
+  }, [searchParams]);
+
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState(initialMessage);
+  const [error, setError] = useState('');
+
+  async function handleEmailSignIn(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoading(true);
+    setMessage('');
+    setError('');
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const redirectTo = `${window.location.origin}/studio`;
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: redirectTo
+        }
+      });
+
+      if (error) throw error;
+      setMessage('Magic link 已发送到你的邮箱。请打开邮件继续登录。');
+      setEmail('');
+    } catch (err) {
+      const text = err instanceof Error ? err.message : '发送登录邮件失败，请稍后再试。';
+      setError(text);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    setLoading(true);
+    setMessage('');
+    setError('');
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/studio`
+        }
+      });
+      if (error) throw error;
+    } catch (err) {
+      const text = err instanceof Error ? err.message : 'Google 登录暂时不可用。';
+      setError(text);
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="container page-space">
       <section className="join-grid">
@@ -23,10 +89,34 @@ export default function JoinPage() {
             <div className="step-item">3. 设置昵称 + 头像</div>
             <div className="step-item">4. 生成今天的 10 张照片</div>
           </div>
-          <div className="button-row">
-            <button className="button button-solid" type="button">Continue with Email</button>
-            <button className="button button-outline" type="button">Continue with Google</button>
-          </div>
+
+          <form className="auth-card" onSubmit={handleEmailSignIn}>
+            <label className="auth-label" htmlFor="email">Continue with Email</label>
+            <div className="auth-input-row">
+              <Mail size={18} />
+              <input
+                id="email"
+                type="email"
+                className="input auth-input"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="button-row">
+              <button className="button button-solid" type="submit" disabled={loading || !email}>
+                {loading ? <><LoaderCircle size={16} className="spin" /> Sending...</> : 'Send Magic Link'}
+              </button>
+              <button className="button button-outline" type="button" onClick={handleGoogleSignIn} disabled={loading}>
+                Continue with Google
+              </button>
+            </div>
+          </form>
+
+          {message ? <p className="auth-message success">{message}</p> : null}
+          {error ? <p className="auth-message error">{error}</p> : null}
+          <p className="auth-hint">Second Look 不替你写。它只帮助你开始。</p>
         </div>
         <div className="source-grid">
           {sourceOptions.map((source) => {
