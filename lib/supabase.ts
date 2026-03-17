@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { ADMIN_EMAILS } from './constants';
 
 let browserClient: SupabaseClient | null = null;
 
@@ -17,9 +18,13 @@ export function getSupabaseBrowserClient() {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      flowType: 'implicit'
-    }
+      flowType: 'implicit',
+    },
   });
 
   return browserClient;
+}
+
+export function isAdminEmail(email: string): boolean {
+  return ADMIN_EMAILS.map((e) => e.toLowerCase()).includes(email.toLowerCase());
 }
