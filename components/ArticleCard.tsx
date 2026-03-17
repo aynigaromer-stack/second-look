@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Eye, Heart, MapPin } from 'lucide-react';
 import type { Post } from '@/lib/data';
 import TimeBlock from './TimeBlock';
 
@@ -13,20 +12,15 @@ export default function ArticleCard({ post }: { post: Post }) {
       <div className="card-body">
         <div className="card-topline">
           <span className="tag">{post.tag}</span>
-          <span className="muted-inline"><MapPin size={14} /> {post.location}</span>
+          <span className="card-location">{post.location}</span>
         </div>
-        <div>
-          <h3 className="card-title">{post.zhTitle}</h3>
-          <div className="card-subtitle">{post.enTitle}</div>
-        </div>
+        <h3 className="card-title">{post.zhTitle}</h3>
+        <div className="card-subtitle">{post.enTitle}</div>
         <TimeBlock firstLook={post.firstLook} secondLook={post.secondLook} days={post.days} />
         <p className="excerpt">{post.excerpt}</p>
         <div className="card-footer">
-          <div>{post.author}</div>
-          <div className="muted-inline">
-            <span className="muted-inline"><Eye size={14} /> {post.views}</span>
-            <span className="muted-inline"><Heart size={14} /> {post.likes}</span>
-          </div>
+          <span>{post.author}</span>
+          <span>{post.location}</span>
         </div>
       </div>
     </Link>
